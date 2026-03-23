@@ -10,11 +10,18 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
 
-# In-memory SQLite for tests (faster)
+# PostgreSQL required for django-tenants (schema-based multi-tenancy)
+# Uses a separate test database to avoid polluting development data
+from decouple import config as env_config
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
+        'ENGINE': 'django_tenants.postgresql_backend',
+        'NAME': env_config('TEST_DB_NAME', default='eventsync_test'),
+        'USER': env_config('DB_USER', default='postgres'),
+        'PASSWORD': env_config('DB_PASSWORD', default=''),
+        'HOST': env_config('DB_HOST', default='localhost'),
+        'PORT': env_config('DB_PORT', default='5432'),
     }
 }
 
