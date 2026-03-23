@@ -31,9 +31,13 @@ class EventViewSet(viewsets.ModelViewSet):
     destroy: DELETE /api/events/{id}/
     transition: POST /api/events/{id}/transition/
     """
-    permission_classes = [permissions.IsAuthenticated, IsOrganizerOrAdmin]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     lookup_field = 'id'
+
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated(), IsOrganizerOrAdmin()]
 
     def get_queryset(self):
         """
@@ -43,13 +47,20 @@ class EventViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = Event.objects.select_related('organizer').order_by('-created_at')
 
-        if user.role == 'organizer':
+        # Unauthenticated access: only show published events
+        if not user or not user.is_authenticated:
+            qs = qs.filter(status=Event.Status.PUBLISHED)
+        elif user.role == 'organizer':
             qs = qs.filter(organizer=user)
 
         # Optional query params
         status_filter = self.request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
+
+        slug_filter = self.request.query_params.get('slug')
+        if slug_filter:
+            qs = qs.filter(slug=slug_filter)
 
         return qs
 

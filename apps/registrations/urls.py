@@ -1,10 +1,14 @@
 """
 URL configuration for Registrations app.
 """
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
-app_name = 'registrations'
+from .views import RegistrationViewSet
+
+router = DefaultRouter()
+router.register(r'', RegistrationViewSet, basename='registration')
 
 urlpatterns = [
-    # URLs will be added in Sprint 5-6 (E3)
+    path('', include(router.urls)),
 ]

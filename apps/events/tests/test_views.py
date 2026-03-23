@@ -83,9 +83,15 @@ class TestEventCRUD(EventViewSetMixin, TenantTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(response.data['count'], 1)
 
-    def test_list_events_unauthenticated_returns_401(self):
+    def test_list_events_unauthenticated_returns_only_published(self):
+        # List is now public — returns only published events for anonymous users
+        self._future_event(ev_status=Event.Status.DRAFT)
+        published = self._future_event(ev_status=Event.Status.PUBLISHED)
         response = TenantClient(self.tenant).get('/api/events/')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [e['id'] for e in response.data['results']]
+        self.assertIn(str(published.id), ids)
+        self.assertEqual(len(ids), 1)  # draft not exposed
 
     def test_create_event_as_admin(self):
         response = self.admin_client.post('/api/events/', self._event_payload(), format='json')
