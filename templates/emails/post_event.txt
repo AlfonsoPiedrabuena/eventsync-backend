@@ -1,0 +1,20 @@
+{% if was_attendee %}¡GRACIAS POR ASISTIR!{% else %}TE ESPERAMOS LA PRÓXIMA VEZ{% endif %} — {{ event.title }}
+=========================================================
+
+Hola {{ registration.first_name }},
+
+{% if was_attendee %}
+¡Muchas gracias por haber asistido a "{{ event.title }}"!
+Fue un placer contar con tu presencia.
+
+Esperamos que el evento haya sido de tu agrado.
+{% else %}
+Notamos que no pudiste asistir a "{{ event.title }}".
+¡No te preocupes! Esperamos verte en próximas ediciones.
+{% endif %}
+
+Evento : {{ event.title }}
+Fecha  : {{ event.start_date|date:"l d \d\e F \d\e Y" }}
+
+---
+Este correo fue generado automáticamente por EventSync.

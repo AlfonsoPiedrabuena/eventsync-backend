@@ -70,7 +70,13 @@ class RegistrationViewSet(viewsets.ModelViewSet):
         Public endpoint: register for an event.
 
         Body must include event_id plus attendee fields.
+        Unauthenticated callers hit the public schema, so we locate the
+        correct tenant schema via the event_id, then switch to it.
         """
+        from django.db import connection as db_conn
+        from django_tenants.utils import schema_context
+        from apps.tenants.models import Tenant
+
         event_id = request.data.get('event_id')
         if not event_id:
             return Response(
@@ -78,8 +84,38 @@ class RegistrationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        event = get_object_or_404(Event, id=event_id)
+        # If already in a real tenant schema (authenticated request), proceed directly.
+        if db_conn.schema_name != 'public':
+            event = get_object_or_404(Event, id=event_id)
+            serializer = RegistrationCreateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            try:
+                registration = services.create_registration(event, serializer.validated_data)
+            except ValidationError as e:
+                return Response({'error': e.messages}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(RegistrationSerializer(registration).data, status=status.HTTP_201_CREATED)
 
+        # Unauthenticated: find which tenant owns this event.
+        tenant_schemas = list(
+            Tenant.objects.exclude(schema_name='public').values_list('schema_name', flat=True)
+        )
+        target_schema = None
+        for schema_name in tenant_schemas:
+            try:
+                with schema_context(schema_name):
+                    if Event.objects.filter(id=event_id).exists():
+                        target_schema = schema_name
+                        break
+            except Exception:
+                continue
+
+        if not target_schema:
+            return Response({'error': 'Evento no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Switch permanently for this request so services/tasks see the right schema.
+        db_conn.set_schema(target_schema)
+
+        event = get_object_or_404(Event, id=event_id)
         serializer = RegistrationCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

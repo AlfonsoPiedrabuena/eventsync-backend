@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ event.title }} — {% if was_attendee %}¡Gracias por asistir!{% else %}Te esperamos la próxima vez{% endif %}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f5; margin: 0; padding: 0; }
+    .wrapper { max-width: 560px; margin: 32px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .header { background: #18181b; padding: 32px; text-align: center; }
+    .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 700; }
+    .header .emoji { font-size: 48px; margin: 12px 0 0; display: block; }
+    .body { padding: 32px; }
+    .body p { color: #3f3f46; line-height: 1.6; margin: 0 0 16px; }
+    .event-card { background: #f4f4f5; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .event-card h2 { margin: 0 0 8px; font-size: 18px; color: #18181b; }
+    .event-card p  { margin: 0; font-size: 14px; color: #52525b; }
+    .footer { padding: 20px 32px; background: #f4f4f5; text-align: center; }
+    .footer p { color: #a1a1aa; font-size: 12px; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>EventSync</h1>
+      <span class="emoji">{% if was_attendee %}🎉{% else %}👋{% endif %}</span>
+    </div>
+
+    <div class="body">
+      <p>Hola <strong>{{ registration.first_name }}</strong>,</p>
+
+      {% if was_attendee %}
+      <p>¡Muchas gracias por haber asistido a <strong>{{ event.title }}</strong>! Fue un placer contar con tu presencia.</p>
+      <p>Esperamos que el evento haya sido de tu agrado. Si tienes comentarios o sugerencias, no dudes en contactar al organizador.</p>
+      {% else %}
+      <p>Notamos que no pudiste asistir a <strong>{{ event.title }}</strong>. ¡No te preocupes! Esperamos verte en próximas ediciones.</p>
+      {% endif %}
+
+      <div class="event-card">
+        <h2>{{ event.title }}</h2>
+        <p>{{ event.start_date|date:"l d \d\e F \d\e Y" }}</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Este correo fue generado automáticamente por EventSync · No responder</p>
+    </div>
+  </div>
+</body>
+</html>

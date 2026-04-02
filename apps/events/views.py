@@ -5,6 +5,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.views import APIView
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
@@ -145,3 +146,52 @@ class EventViewSet(viewsets.ModelViewSet):
             return Response({'error': e.messages}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(EventDetailSerializer(event, context={'request': request}).data)
+
+
+class PublicEventBySlugView(APIView):
+    """
+    GET /api/events/public/<slug_with_id>/
+
+    Unauthenticated endpoint for the public event registration page.
+    The URL parameter has the format "{slug}-{event_uuid}", e.g.
+    "checkpoint-migracion-22a30481-1ba5-4d69-91d1-338aa663bc3c".
+
+    Extracts the UUID (last 36 chars), then searches tenant schemas for
+    that event ID — faster than a slug search and globally unique.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, slug_with_id):
+        import re
+        from django_tenants.utils import schema_context
+        from apps.tenants.models import Tenant
+
+        # UUID is always the last 36 characters of the path segment
+        uuid_pattern = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        match = re.search(uuid_pattern, slug_with_id)
+        if not match:
+            return Response({'detail': 'URL inválida.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        event_id = match.group(0)
+
+        tenant_schemas = list(
+            Tenant.objects
+            .exclude(schema_name='public')
+            .values_list('schema_name', flat=True)
+        )
+
+        for schema_name in tenant_schemas:
+            try:
+                with schema_context(schema_name):
+                    event = Event.objects.filter(
+                        id=event_id,
+                        status=Event.Status.PUBLISHED,
+                    ).select_related('organizer').first()
+                    if event:
+                        return Response(
+                            EventDetailSerializer(event, context={'request': request}).data
+                        )
+            except Exception:
+                continue
+
+        return Response({'detail': 'Evento no encontrado.'}, status=status.HTTP_404_NOT_FOUND)

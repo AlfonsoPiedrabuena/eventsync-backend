@@ -135,6 +135,16 @@ def transition_event_status(event: Event, user, new_status: str) -> Event:
     event.save(update_fields=['status', 'published_at', 'updated_at']
                if new_status == Event.Status.PUBLISHED
                else ['status', 'updated_at'])
+
+    # Enqueue post-event emails when an event is finalized (E5).
+    if new_status == Event.Status.FINALIZED:
+        try:
+            from django.db import connection
+            from apps.communications.tasks import send_post_event_emails_task
+            send_post_event_emails_task.delay(str(event.id), connection.schema_name)
+        except Exception:
+            pass  # Task queue unavailable — transition still succeeds.
+
     return event
 
 

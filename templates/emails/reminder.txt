@@ -1,0 +1,20 @@
+RECORDATORIO: {{ event.title }} — comienza en {{ hours_until }} hora{% if hours_until > 1 %}s{% endif %}
+=========================================================
+
+Hola {{ registration.first_name }},
+
+{% if hours_until == 24 %}¡Mañana es el día!{% else %}¡El evento comienza en 1 hora!{% endif %}
+Tienes un registro confirmado para:
+
+DETALLES DEL EVENTO
+-------------------
+Evento  : {{ event.title }}
+Fecha   : {{ event.start_date|date:"l d \d\e F \d\e Y, H:i" }} hrs
+{% if not event.is_virtual and event.location %}Lugar   : {{ event.location }}
+{% elif event.is_virtual %}Modalidad: Virtual
+{% endif %}
+
+Recuerda tener a mano tu código QR enviado en el correo de confirmación.
+
+---
+Este correo fue generado automáticamente por EventSync.

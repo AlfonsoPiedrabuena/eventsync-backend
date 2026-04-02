@@ -1,0 +1,9 @@
+Mensaje sobre: {{ event.title }}
+=========================================================
+
+Hola {{ registration.first_name }},
+
+{{ message }}
+
+---
+Este correo fue enviado por el organizador de "{{ event.title }}" a través de EventSync.

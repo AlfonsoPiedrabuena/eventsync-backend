@@ -1,0 +1,30 @@
+{% if is_waitlisted %}LISTA DE ESPERA{% else %}REGISTRO CONFIRMADO{% endif %}: {{ event.title }}
+=========================================================
+
+Hola {{ registration.first_name }},
+
+{% if is_waitlisted %}
+Tu registro ha sido recibido pero el evento está al límite de capacidad.
+Has sido añadido a la lista de espera. Te notificaremos si un lugar queda disponible.
+{% else %}
+¡Tu registro ha sido confirmado! Te esperamos en el evento.
+{% endif %}
+
+DETALLES DEL EVENTO
+-------------------
+Evento  : {{ event.title }}
+Fecha   : {{ event.start_date|date:"l d \d\e F \d\e Y, H:i" }} hrs
+{% if not event.is_virtual and event.location %}Lugar   : {{ event.location }}
+{% elif event.is_virtual %}Modalidad: Virtual
+{% endif %}
+
+{% if not is_waitlisted %}
+TU CÓDIGO DE CHECK-IN
+---------------------
+Enlace QR: {{ qr_url }}
+
+Presenta este enlace o el código QR adjunto en la entrada del evento.
+{% endif %}
+
+---
+Este correo fue generado automáticamente por EventSync.

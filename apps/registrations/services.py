@@ -72,6 +72,15 @@ def create_registration(event: Event, validated_data: dict) -> Registration:
         email=email,
         **{k: v for k, v in validated_data.items() if k != 'email'},
     )
+
+    # Enqueue confirmation email (E5). Import here to avoid circular imports.
+    try:
+        from django.db import connection
+        from apps.communications.tasks import send_confirmation_email_task
+        send_confirmation_email_task.delay(str(registration.id), connection.schema_name)
+    except Exception:
+        pass  # Task queue unavailable — registration still succeeds.
+
     return registration
 
 
