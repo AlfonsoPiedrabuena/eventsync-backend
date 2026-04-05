@@ -114,7 +114,9 @@ class TenantRegistrationSerializer(serializers.Serializer):
             user.email_verification_token = uuid.uuid4().hex
             user.save()
 
-            # TODO: Send verification email (E5)
+            from apps.communications.tasks import send_verification_email_task
+            from django.db import connection
+            send_verification_email_task.delay(user.id, connection.schema_name)
 
         return {
             'user': user,

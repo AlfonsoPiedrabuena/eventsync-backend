@@ -11,6 +11,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
@@ -52,6 +54,7 @@ SHARED_APPS = (
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'anymail',
 )
 
 # Apps specific to each tenant (tenant schema)
@@ -203,3 +206,7 @@ CELERY_TIMEZONE = TIME_ZONE
 # Email Configuration
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@eventsync.app')
+
+ANYMAIL = {
+    'RESEND_API_KEY': config('RESEND_API_KEY', default=''),
+}

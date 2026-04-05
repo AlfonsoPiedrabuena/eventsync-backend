@@ -28,9 +28,9 @@ if SENTRY_DSN:
 
 # Email
 ANYMAIL = {
-    'SENDGRID_API_KEY': config('SENDGRID_API_KEY'),
+    'RESEND_API_KEY': config('RESEND_API_KEY'),
 }
-EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend'
+EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
 
 # Logging
 LOGGING = {

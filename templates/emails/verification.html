@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifica tu cuenta — EventSync</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f5; margin: 0; padding: 0; }
+    .wrapper { max-width: 560px; margin: 32px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .header { background: #18181b; padding: 32px; text-align: center; }
+    .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 700; }
+    .header p { color: #a1a1aa; margin: 6px 0 0; font-size: 14px; }
+    .body { padding: 32px; }
+    .body p { color: #3f3f46; line-height: 1.6; margin: 0 0 16px; }
+    .btn { display: inline-block; margin: 8px 0 24px; padding: 14px 32px; background: #18181b; color: #fff !important; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; }
+    .note { background: #f4f4f5; border-radius: 8px; padding: 16px 20px; font-size: 13px; color: #71717a; }
+    .footer { padding: 20px 32px; background: #f4f4f5; text-align: center; }
+    .footer p { color: #a1a1aa; font-size: 12px; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>EventSync</h1>
+      <p>Plataforma de gestión de eventos</p>
+    </div>
+    <div class="body">
+      <p>Hola <strong>{{ first_name }}</strong>,</p>
+      <p>Gracias por registrar <strong>{{ organization_name }}</strong> en EventSync. Para activar tu cuenta, verifica tu dirección de correo haciendo clic en el botón:</p>
+      <div style="text-align: center;">
+        <a href="{{ verification_url }}" class="btn">Verificar mi cuenta</a>
+      </div>
+      <div class="note">
+        <p style="margin:0;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+        <p style="margin: 8px 0 0; word-break: break-all;">{{ verification_url }}</p>
+      </div>
+      <p style="margin-top: 20px; font-size: 13px; color: #a1a1aa;">Este enlace expira en 48 horas. Si no creaste esta cuenta, puedes ignorar este mensaje.</p>
+    </div>
+    <div class="footer">
+      <p>© EventSync — Todos los derechos reservados</p>
+    </div>
+  </div>
+</body>
+</html>

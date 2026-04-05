@@ -153,6 +153,27 @@ def send_manual_email_task(self, event_id: str, subject: str, message: str, segm
         raise self.retry(exc=exc)
 
 
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_verification_email_task(self, user_id: int, tenant_schema: str):
+    """
+    Send an account verification email to a newly registered user.
+
+    Enqueued by authentication.serializers.TenantRegistrationSerializer
+    immediately after the user and tenant are created.
+    """
+    from apps.authentication.models import User
+    from . import services
+
+    try:
+        connection.set_schema(tenant_schema)
+        user = User.objects.select_related('tenant').get(id=user_id)
+        services.send_verification_email(user)
+    except User.DoesNotExist:
+        pass
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
 # ---------------------------------------------------------------------------
 # Beat task  (no incoming context — iterates over all tenants)
 # ---------------------------------------------------------------------------

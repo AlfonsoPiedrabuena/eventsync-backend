@@ -328,3 +328,33 @@ def send_manual_email_to_registration(
             error_message=str(exc),
         )
         raise
+
+
+# ---------------------------------------------------------------------------
+# Auth emails  (not tied to a Registration — no EmailLog)
+# ---------------------------------------------------------------------------
+
+def send_verification_email(user) -> None:
+    """
+    Send an account verification email to a newly registered user.
+
+    The link points to the Next.js frontend verify-email page, which
+    calls the backend API to complete the verification.
+    """
+    from django.conf import settings as django_settings
+
+    verification_url = (
+        f"{django_settings.FRONTEND_URL}/verify-email"
+        f"?token={user.email_verification_token}"
+    )
+
+    _send_email(
+        to_email=user.email,
+        subject='Verifica tu cuenta en EventSync',
+        template_base='emails/verification',
+        context={
+            'first_name': user.first_name,
+            'organization_name': getattr(user.tenant, 'name', 'tu organización'),
+            'verification_url': verification_url,
+        },
+    )

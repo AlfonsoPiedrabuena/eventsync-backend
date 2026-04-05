@@ -1,0 +1,14 @@
+Hola {{ first_name }},
+
+Gracias por registrar {{ organization_name }} en EventSync.
+
+Para activar tu cuenta, verifica tu dirección de correo visitando el siguiente enlace:
+
+{{ verification_url }}
+
+Este enlace expira en 48 horas.
+
+Si no creaste esta cuenta, puedes ignorar este mensaje.
+
+---
+EventSync — Plataforma de gestión de eventos

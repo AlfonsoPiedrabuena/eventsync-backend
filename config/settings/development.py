@@ -5,8 +5,8 @@ from .base import *
 
 DEBUG = True
 
-# Email to console in development
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email: respeta EMAIL_BACKEND del .env (default: console)
+# Para usar Resend en desarrollo, setear EMAIL_BACKEND=anymail.backends.resend.EmailBackend en .env
 
 # Django Debug Toolbar
 INSTALLED_APPS += ['debug_toolbar', 'django_extensions']

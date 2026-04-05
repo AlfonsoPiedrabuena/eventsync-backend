@@ -20,7 +20,7 @@ celery==5.3.6
 redis==5.0.3
 
 # Email
-django-anymail[sendgrid]==10.3
+django-anymail[resend]==10.3
 
 # OAuth
 django-oauth-toolkit==2.3.0
