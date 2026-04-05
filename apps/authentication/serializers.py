@@ -73,11 +73,16 @@ class TenantRegistrationSerializer(serializers.Serializer):
         This method is called from the view and handles the transaction.
         """
         from apps.tenants.models import Tenant, Domain
-        from django.db import transaction
+        from django.db import transaction, connection
         from django.utils.text import slugify
+        from django_tenants.utils import schema_context
         import uuid
 
         organization_name = validated_data.pop('organization_name')
+
+        # Force public schema — register endpoint is AllowAny but TenantAwareJWTAuthentication
+        # may have already switched to a tenant schema if the browser sent a valid JWT.
+        connection.set_schema('public')
 
         with transaction.atomic():
             # Create tenant
@@ -114,9 +119,10 @@ class TenantRegistrationSerializer(serializers.Serializer):
             user.email_verification_token = uuid.uuid4().hex
             user.save()
 
-            from apps.communications.tasks import send_verification_email_task
-            from django.db import connection
-            send_verification_email_task.delay(user.id, connection.schema_name)
+        # Enqueue AFTER transaction commits — if called inside atomic(), the worker
+        # may execute before the data is visible to other DB connections.
+        from apps.communications.tasks import send_verification_email_task
+        send_verification_email_task.delay(user.id, 'public')
 
         return {
             'user': user,

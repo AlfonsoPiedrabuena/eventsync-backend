@@ -154,6 +154,27 @@ def send_manual_email_task(self, event_id: str, subject: str, message: str, segm
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_password_reset_email_task(self, user_id: int):
+    """
+    Send a password reset email to the user.
+
+    Enqueued by authentication.views.PasswordResetRequestView after
+    generating the reset token. User always lives in the public schema.
+    """
+    from apps.authentication.models import User
+    from . import services
+
+    try:
+        connection.set_schema('public')
+        user = User.objects.get(id=user_id)
+        services.send_password_reset_email(user)
+    except User.DoesNotExist:
+        pass
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_verification_email_task(self, user_id: int, tenant_schema: str):
     """
     Send an account verification email to a newly registered user.

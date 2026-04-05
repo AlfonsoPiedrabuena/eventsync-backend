@@ -358,3 +358,28 @@ def send_verification_email(user) -> None:
             'verification_url': verification_url,
         },
     )
+
+
+def send_password_reset_email(user) -> None:
+    """
+    Send a password reset email with a one-time link.
+
+    The link points to the Next.js frontend password-reset page, which
+    calls POST /api/auth/password-reset/confirm/ to complete the reset.
+    """
+    from django.conf import settings as django_settings
+
+    reset_url = (
+        f"{django_settings.FRONTEND_URL}/password-reset"
+        f"?token={user.email_verification_token}"
+    )
+
+    _send_email(
+        to_email=user.email,
+        subject='Restablece tu contraseña en EventSync',
+        template_base='emails/password_reset',
+        context={
+            'first_name': user.first_name,
+            'reset_url': reset_url,
+        },
+    )

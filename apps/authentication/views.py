@@ -64,6 +64,9 @@ class LoginView(APIView):
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
 
+        from django.db import connection
+        connection.set_schema('public')
+
         # Authenticate user
         user = authenticate(request, email=email, password=password)
 
@@ -129,6 +132,8 @@ class EmailVerificationView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, token):
+        from django.db import connection
+        connection.set_schema('public')
         try:
             user = User.objects.get(email_verification_token=token)
 
@@ -165,6 +170,9 @@ class PasswordResetRequestView(APIView):
 
         email = serializer.validated_data['email']
 
+        from django.db import connection
+        connection.set_schema('public')
+
         try:
             user = User.objects.get(email=email)
 
@@ -173,7 +181,8 @@ class PasswordResetRequestView(APIView):
             user.email_verification_token = reset_token  # Reusing this field
             user.save()
 
-            # TODO: Send password reset email (E5)
+            from apps.communications.tasks import send_password_reset_email_task
+            send_password_reset_email_task.delay(user.id)
 
             return Response({
                 'message': 'Si el correo existe, recibirás instrucciones para restablecer tu contraseña.'
@@ -200,6 +209,9 @@ class PasswordResetConfirmView(APIView):
 
         token = serializer.validated_data['token']
         password = serializer.validated_data['password']
+
+        from django.db import connection
+        connection.set_schema('public')
 
         try:
             user = User.objects.get(email_verification_token=token)
