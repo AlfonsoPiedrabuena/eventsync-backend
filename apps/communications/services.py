@@ -126,12 +126,18 @@ def send_confirmation_email(registration: Registration) -> None:
     qr_url = f"{_CHECKIN_BASE_URL}/{registration.qr_token}"
     subject = f"Registro {'en lista de espera' if is_waitlisted else 'confirmado'}: {event.title}"
 
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+    cancellation_link = (
+        f"{frontend_url}/registrations/cancel?token={registration.cancellation_token}"
+    )
+
     context = {
         'registration': registration,
         'event': event,
         'is_waitlisted': is_waitlisted,
         'qr_base64': qr_base64,
         'qr_url': qr_url,
+        'cancellation_link': cancellation_link,
     }
 
     try:
@@ -321,6 +327,56 @@ def send_manual_email_to_registration(
             event=event,
             registration=registration,
             email_type=EmailLog.EmailType.MANUAL,
+            recipient_email=registration.email,
+            recipient_name=registration.full_name,
+            subject=subject,
+            status=EmailLog.Status.FAILED,
+            error_message=str(exc),
+        )
+        raise
+
+
+def send_cancellation_email(registration: Registration) -> None:
+    """
+    Send a cancellation confirmation email to an attendee.
+
+    Idempotent — no-ops if a successful cancellation email was already sent.
+
+    Args:
+        registration: Cancelled Registration instance.
+    """
+    if _already_sent(registration, EmailLog.EmailType.CANCELLATION):
+        return
+
+    event = registration.event
+    subject = f"Cancelación confirmada: {event.title}"
+
+    context = {
+        'registration': registration,
+        'event': event,
+    }
+
+    try:
+        _send_email(
+            to_email=registration.email,
+            subject=subject,
+            template_base='emails/cancellation',
+            context=context,
+        )
+        _log_email(
+            event=event,
+            registration=registration,
+            email_type=EmailLog.EmailType.CANCELLATION,
+            recipient_email=registration.email,
+            recipient_name=registration.full_name,
+            subject=subject,
+            status=EmailLog.Status.SENT,
+        )
+    except Exception as exc:
+        _log_email(
+            event=event,
+            registration=registration,
+            email_type=EmailLog.EmailType.CANCELLATION,
             recipient_email=registration.email,
             recipient_name=registration.full_name,
             subject=subject,

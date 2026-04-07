@@ -32,7 +32,7 @@ class TestEventStateTransitions(TenantTestCase):
             slug=f'test-event-{count}',
             start_date=now + timedelta(days=days_ahead),
             end_date=now + timedelta(days=days_ahead, hours=4),
-            is_virtual=True,
+            modality='virtual',
             status=status,
             organizer=self.user,
         )
@@ -125,7 +125,7 @@ class TestEventComputedProperties(TenantTestCase):
             slug='capped-event',
             start_date=now + timedelta(days=5),
             end_date=now + timedelta(days=5, hours=2),
-            is_virtual=True,
+            modality='virtual',
             max_capacity=100,
             organizer=self.user,
         )
@@ -141,7 +141,7 @@ class TestEventComputedProperties(TenantTestCase):
             slug='unlimited-event',
             start_date=now + timedelta(days=5),
             end_date=now + timedelta(days=5, hours=2),
-            is_virtual=True,
+            modality='virtual',
             max_capacity=None,
             organizer=self.user,
         )
@@ -154,7 +154,7 @@ class TestEventComputedProperties(TenantTestCase):
             slug='open-event',
             start_date=now + timedelta(days=5),
             end_date=now + timedelta(days=5, hours=2),
-            is_virtual=True,
+            modality='virtual',
             status=Event.Status.PUBLISHED,
             organizer=self.user,
         )
@@ -176,7 +176,7 @@ class TestEventComputedProperties(TenantTestCase):
             slug='past-event',
             start_date=now - timedelta(days=2),
             end_date=now - timedelta(days=1),
-            is_virtual=True,
+            modality='virtual',
             status=Event.Status.PUBLISHED,
             organizer=self.user,
         )

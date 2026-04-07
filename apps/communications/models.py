@@ -24,6 +24,7 @@ class EmailLog(models.Model):
         REMINDER_1H  = 'reminder_1h',  'Recordatorio 1h'
         POST_EVENT   = 'post_event',   'Post-evento'
         MANUAL       = 'manual',       'Envío Manual'
+        CANCELLATION = 'cancellation', 'Cancelación'
 
     class Status(models.TextChoices):
         SENT   = 'sent',   'Enviado'

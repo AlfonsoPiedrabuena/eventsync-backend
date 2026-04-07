@@ -50,6 +50,9 @@ class Registration(models.Model):
         db_index=True,
     )
 
+    # Cancellation token (used for self-service cancellation via email link)
+    cancellation_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
     # Check-in (used by E4)
     checked_in = models.BooleanField(default=False)
     checked_in_at = models.DateTimeField(null=True, blank=True)

@@ -34,7 +34,7 @@ class TestGenerateUniqueSlug(TenantTestCase):
             slug='existing-event',
             start_date=now + timedelta(days=10),
             end_date=now + timedelta(days=10, hours=2),
-            is_virtual=True,
+            modality='virtual',
             organizer=self.user,
         )
 
@@ -69,7 +69,7 @@ class TestGenerateUniqueSlug(TenantTestCase):
             slug=slug1,
             start_date=now + timedelta(days=10),
             end_date=now + timedelta(days=10, hours=2),
-            is_virtual=True,
+            modality='virtual',
             organizer=self.user,
         )
         slug2 = generate_unique_slug('Existing Event')
@@ -100,7 +100,7 @@ class TestCreateEvent(TenantTestCase):
         now = timezone.now()
         return {
             'title': 'Mi Evento',
-            'is_virtual': True,
+            'modality': 'virtual',
             'start_date': now + timedelta(days=30),
             'end_date': now + timedelta(days=30, hours=4),
             **overrides,
@@ -142,7 +142,7 @@ class TestUpdateEvent(TenantTestCase):
         self.base_data = {
             'start_date': now + timedelta(days=10),
             'end_date': now + timedelta(days=10, hours=4),
-            'is_virtual': True,
+            'modality': 'virtual',
             'organizer': self.user,
         }
 
@@ -199,7 +199,7 @@ class TestTransitionEventStatus(TenantTestCase):
             slug=f'transition-event-{count}',
             start_date=now + timedelta(days=30),
             end_date=now + timedelta(days=30, hours=4),
-            is_virtual=True,
+            modality='virtual',
             status=status,
             organizer=self.user,
             **kwargs,
@@ -234,7 +234,7 @@ class TestTransitionEventStatus(TenantTestCase):
             slug=f'past-event-{count}',
             start_date=now - timedelta(days=2),
             end_date=now - timedelta(days=1),
-            is_virtual=True,
+            modality='virtual',
             status=Event.Status.DRAFT,
             organizer=self.user,
         )
@@ -250,7 +250,7 @@ class TestTransitionEventStatus(TenantTestCase):
             slug=f'no-location-{count}',
             start_date=now + timedelta(days=5),
             end_date=now + timedelta(days=5, hours=2),
-            is_virtual=False,
+            modality='in_person',
             location='',
             status=Event.Status.DRAFT,
             organizer=self.user,
@@ -267,7 +267,7 @@ class TestTransitionEventStatus(TenantTestCase):
             slug=f'bad-dates-{count}',
             start_date=now + timedelta(days=5),
             end_date=now + timedelta(days=4),  # end before start
-            is_virtual=True,
+            modality='virtual',
             status=Event.Status.DRAFT,
             organizer=self.user,
         )

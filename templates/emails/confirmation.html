@@ -50,16 +50,23 @@
           <span>📅</span>
           <span>{{ event.start_date|date:"l d \d\e F \d\e Y, H:i" }} hrs</span>
         </div>
-        {% if not event.is_virtual and event.location %}
+        {% if event.location %}
         <div class="detail">
           <span>📍</span>
           <span>{{ event.location }}</span>
         </div>
-        {% elif event.is_virtual %}
+        {% endif %}
+        {% if event.modality != 'in_person' %}
         <div class="detail">
           <span>💻</span>
-          <span>Evento virtual</span>
+          <span>{% if event.modality == 'hybrid' %}Evento híbrido{% else %}Evento virtual{% endif %}</span>
         </div>
+        {% if event.virtual_access_url %}
+        <div class="detail">
+          <span>🔗</span>
+          <span><a href="{{ event.virtual_access_url }}" style="color:#18181b;">{{ event.virtual_access_url }}</a></span>
+        </div>
+        {% endif %}
         {% endif %}
         {% if event.description %}
         <div class="detail">
@@ -81,6 +88,12 @@
         Si tienes algún problema, contacta al organizador del evento.
         {% if not is_waitlisted %}Tu enlace de check-in: <a href="{{ qr_url }}">{{ qr_url }}</a>{% endif %}
       </p>
+
+      {% if not is_waitlisted and cancellation_link %}
+      <p style="font-size:12px; color:#a1a1aa; margin-top:24px; border-top:1px solid #e4e4e7; padding-top:16px;">
+        ¿No podrás asistir? <a href="{{ cancellation_link }}" style="color:#71717a;">Cancela tu registro aquí</a> para liberar tu lugar a otro asistente.
+      </p>
+      {% endif %}
     </div>
 
     <div class="footer">

@@ -51,7 +51,7 @@ class RegistrationViewSetMixin:
             slug='conf-2026',
             organizer=self.organizer,
             status=Event.Status.PUBLISHED,
-            is_virtual=True,
+            modality='virtual',
             start_date=now + timedelta(days=30),
             end_date=now + timedelta(days=30, hours=4),
         )
@@ -164,7 +164,7 @@ class TestOrganizerRegistrationList(RegistrationViewSetMixin, TenantTestCase):
             slug='other-event',
             organizer=self.other_organizer,
             status=Event.Status.PUBLISHED,
-            is_virtual=True,
+            modality='virtual',
             start_date=timezone.now() + timedelta(days=10),
             end_date=timezone.now() + timedelta(days=10, hours=4),
         )

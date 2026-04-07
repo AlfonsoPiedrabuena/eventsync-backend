@@ -1,0 +1,18 @@
+EventSync — Cancelación confirmada
+===================================
+
+Hola {{ registration.first_name }},
+
+Tu registro para el siguiente evento ha sido cancelado exitosamente.
+
+Evento: {{ event.title }}
+Fecha: {{ event.start_date|date:"l d \d\e F \d\e Y, H:i" }} hrs
+{% if event.location %}Lugar: {{ event.location }}{% endif %}
+
+Si cancelaste por error o cambias de opinión, puedes volver a registrarte
+en la página del evento mientras haya lugares disponibles.
+
+Si no solicitaste esta cancelación, por favor contacta al organizador del evento.
+
+---
+Este correo fue generado automáticamente por EventSync · No responder

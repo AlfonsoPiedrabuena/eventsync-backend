@@ -8,7 +8,7 @@ from .models import Event
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('title', 'status', 'organizer', 'start_date', 'end_date', 'max_capacity', 'created_at')
-    list_filter = ('status', 'is_virtual', 'start_date')
+    list_filter = ('status', 'modality', 'start_date')
     search_fields = ('title', 'slug', 'organizer__email')
     prepopulated_fields = {'slug': ('title',)}
     readonly_fields = ('id', 'created_at', 'updated_at', 'published_at')
@@ -20,7 +20,7 @@ class EventAdmin(admin.ModelAdmin):
             'fields': ('id', 'title', 'slug', 'description', 'cover_image')
         }),
         ('Fecha y Lugar', {
-            'fields': ('start_date', 'end_date', 'is_virtual', 'location', 'location_url')
+            'fields': ('start_date', 'end_date', 'modality', 'location', 'location_url', 'virtual_access_url')
         }),
         ('Capacidad y Estado', {
             'fields': ('max_capacity', 'status', 'organizer')

@@ -37,10 +37,22 @@ class Event(models.Model):
     slug = models.SlugField(max_length=220, unique=True, db_index=True)
     description = models.TextField(blank=True)
 
+    # Modality
+    class Modality(models.TextChoices):
+        IN_PERSON = 'in_person', 'Presencial'
+        VIRTUAL   = 'virtual',   'Virtual'
+        HYBRID    = 'hybrid',    'Híbrido'
+
+    modality = models.CharField(
+        max_length=20,
+        choices=Modality.choices,
+        default=Modality.IN_PERSON,
+    )
+
     # Location
-    is_virtual = models.BooleanField(default=False)
     location = models.CharField(max_length=300, blank=True)
     location_url = models.URLField(blank=True)
+    virtual_access_url = models.URLField(blank=True, null=True)
 
     # Dates
     start_date = models.DateTimeField()
@@ -54,6 +66,7 @@ class Event(models.Model):
     )
 
     # Media
+    hero_image_url = models.URLField(blank=True, null=True)
     cover_image = models.ImageField(
         upload_to='events/covers/',
         null=True,
@@ -94,6 +107,11 @@ class Event(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.get_status_display()})"
+
+    @property
+    def is_virtual(self):
+        """Backward-compatible property — True for virtual and hybrid events."""
+        return self.modality in (self.Modality.VIRTUAL, self.Modality.HYBRID)
 
     @property
     def is_past(self):

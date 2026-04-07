@@ -1,6 +1,7 @@
 """
 Serializers for Registrations app.
 """
+import re
 from rest_framework import serializers
 from .models import Registration
 
@@ -49,3 +50,10 @@ class RegistrationCreateSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         return value.lower()
+
+    def validate_phone(self, value):
+        if value and not re.match(r'^\+[1-9]\d{6,14}$', value):
+            raise serializers.ValidationError(
+                'Formato inválido. Usa formato E.164 (ej: +525512345678)'
+            )
+        return value

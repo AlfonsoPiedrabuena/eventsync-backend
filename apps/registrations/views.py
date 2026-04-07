@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.events.models import Event
 from .models import Registration
@@ -164,6 +165,7 @@ class RegistrationViewSet(viewsets.ModelViewSet):
         return Response(RegistrationSerializer(registration).data)
 
     def _export_csv(self, queryset):
+
         """Export registrations as CSV file."""
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="registrations.csv"'
@@ -189,3 +191,81 @@ class RegistrationViewSet(viewsets.ModelViewSet):
             ])
 
         return response
+
+
+class CancelByTokenView(APIView):
+    """
+    Public endpoint to cancel a registration via the cancellation token
+    embedded in the confirmation email link.
+
+    POST /api/registrations/cancel/
+    Body: { "token": "<cancellation_token>" }
+
+    Responses:
+        200 { "status": "cancelled", "event_title": "..." }
+        200 { "status": "already_cancelled" }
+        404 { "error": "Token inválido." }
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        from django.db import connection as db_conn
+        from django_tenants.utils import schema_context
+        from apps.tenants.models import Tenant
+        from apps.communications.tasks import send_cancellation_email_task
+
+        token = request.data.get('token')
+        if not token:
+            return Response(
+                {'error': 'El token es requerido.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Search across all tenant schemas for a registration with this token.
+        tenant_schemas = list(
+            Tenant.objects.exclude(schema_name='public').values_list('schema_name', flat=True)
+        )
+
+        target_schema = None
+        registration = None
+
+        for schema_name in tenant_schemas:
+            try:
+                with schema_context(schema_name):
+                    reg = Registration.objects.select_related('event').filter(
+                        cancellation_token=token
+                    ).first()
+                    if reg:
+                        target_schema = schema_name
+                        # Fetch outside schema_context so the object is usable after
+                        break
+            except Exception:
+                continue
+
+        if not target_schema:
+            return Response(
+                {'error': 'Token inválido.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Switch permanently to the tenant schema for the rest of this request.
+        db_conn.set_schema(target_schema)
+        registration = Registration.objects.select_related('event').get(
+            cancellation_token=token
+        )
+
+        if registration.status == Registration.Status.CANCELLED:
+            return Response({'status': 'already_cancelled'}, status=status.HTTP_200_OK)
+
+        event_title = registration.event.title
+        services.cancel_registration(registration, cancelled_by_organizer=False)
+
+        try:
+            send_cancellation_email_task.delay(str(registration.id), target_schema)
+        except Exception:
+            pass  # Email failure must not break the cancellation flow.
+
+        return Response(
+            {'status': 'cancelled', 'event_title': event_title},
+            status=status.HTTP_200_OK,
+        )

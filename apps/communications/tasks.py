@@ -154,6 +154,31 @@ def send_manual_email_task(self, event_id: str, subject: str, message: str, segm
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_cancellation_email_task(self, registration_id: str, tenant_schema: str):
+    """
+    Send a cancellation confirmation email to an attendee.
+
+    Enqueued by registrations.views.CancelByTokenView after cancelling
+    a registration via the public cancellation link.
+    """
+    from apps.registrations.models import Registration
+    from . import services
+
+    try:
+        connection.set_schema(tenant_schema)
+        registration = (
+            Registration.objects
+            .select_related('event')
+            .get(id=registration_id)
+        )
+        services.send_cancellation_email(registration)
+    except Registration.DoesNotExist:
+        pass
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_password_reset_email_task(self, user_id: int):
     """
     Send a password reset email to the user.

@@ -27,7 +27,7 @@ class CheckinServiceTestCase(TenantTestCase):
             slug='conf-2026',
             organizer=self.organizer,
             status=Event.Status.PUBLISHED,
-            is_virtual=True,
+            modality='virtual',
             start_date=now + timedelta(days=1),
             end_date=now + timedelta(days=1, hours=4),
         )

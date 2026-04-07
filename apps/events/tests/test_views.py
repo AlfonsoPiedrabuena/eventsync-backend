@@ -58,7 +58,7 @@ class EventViewSetMixin:
             slug=f'event-{count}',
             start_date=now + timedelta(days=30),
             end_date=now + timedelta(days=30, hours=4),
-            is_virtual=True,
+            modality='virtual',
             status=ev_status,
             organizer=user or self.admin,
         )
@@ -67,7 +67,7 @@ class EventViewSetMixin:
         now = timezone.now()
         return {
             'title': 'New Event',
-            'is_virtual': True,
+            'modality': 'virtual',
             'start_date': (now + timedelta(days=30)).isoformat(),
             'end_date': (now + timedelta(days=30, hours=4)).isoformat(),
             **overrides,
@@ -230,7 +230,7 @@ class TestCreateEventValidation(EventViewSetMixin, TenantTestCase):
     def test_create_without_title_fails(self):
         now = timezone.now()
         response = self.admin_client.post('/api/events/', {
-            'is_virtual': True,
+            'modality': 'virtual',
             'start_date': (now + timedelta(days=1)).isoformat(),
             'end_date': (now + timedelta(days=1, hours=2)).isoformat(),
         }, format='json')
@@ -240,7 +240,7 @@ class TestCreateEventValidation(EventViewSetMixin, TenantTestCase):
         now = timezone.now()
         response = self.admin_client.post('/api/events/', {
             'title': 'No Location',
-            'is_virtual': False,
+            'modality': 'in_person',
             'start_date': (now + timedelta(days=1)).isoformat(),
             'end_date': (now + timedelta(days=1, hours=2)).isoformat(),
         }, format='json')
@@ -251,7 +251,7 @@ class TestCreateEventValidation(EventViewSetMixin, TenantTestCase):
         now = timezone.now()
         response = self.admin_client.post('/api/events/', {
             'title': 'Bad Dates',
-            'is_virtual': True,
+            'modality': 'virtual',
             'start_date': (now + timedelta(days=5)).isoformat(),
             'end_date': (now + timedelta(days=3)).isoformat(),
         }, format='json')

@@ -46,7 +46,7 @@ class CommunicationsViewSetUp(TenantTestCase):
             slug='test-conf',
             organizer=self.organizer,
             status=Event.Status.PUBLISHED,
-            is_virtual=True,
+            modality='virtual',
             start_date=now + timedelta(days=2),
             end_date=now + timedelta(days=2, hours=4),
         )

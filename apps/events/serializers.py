@@ -14,11 +14,12 @@ class EventListSerializer(serializers.ModelSerializer):
     spots_remaining = serializers.IntegerField(read_only=True)
     is_open_for_registration = serializers.BooleanField(read_only=True)
     cover_image_url = serializers.SerializerMethodField()
+    is_virtual = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Event
         fields = (
-            'id', 'title', 'slug', 'status', 'is_virtual',
+            'id', 'title', 'slug', 'status', 'modality', 'is_virtual',
             'location', 'start_date', 'end_date',
             'max_capacity', 'registration_count', 'spots_remaining',
             'is_open_for_registration', 'cover_image_url',
@@ -44,12 +45,14 @@ class EventDetailSerializer(serializers.ModelSerializer):
     is_open_for_registration = serializers.BooleanField(read_only=True)
     cover_image_url = serializers.SerializerMethodField()
     valid_transitions = serializers.SerializerMethodField()
+    is_virtual = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Event
         fields = (
             'id', 'title', 'slug', 'description', 'status',
-            'is_virtual', 'location', 'location_url',
+            'modality', 'is_virtual', 'location', 'location_url',
+            'virtual_access_url', 'hero_image_url',
             'start_date', 'end_date', 'max_capacity',
             'registration_count', 'spots_remaining',
             'is_open_for_registration', 'cover_image_url',
@@ -85,7 +88,8 @@ class EventCreateSerializer(serializers.ModelSerializer):
         model = Event
         fields = (
             'title', 'slug', 'description',
-            'is_virtual', 'location', 'location_url',
+            'modality', 'location', 'location_url', 'virtual_access_url',
+            'hero_image_url',
             'start_date', 'end_date', 'max_capacity',
         )
 
@@ -97,9 +101,9 @@ class EventCreateSerializer(serializers.ModelSerializer):
                 'end_date': 'La fecha de fin debe ser posterior a la fecha de inicio.'
             })
 
-        is_virtual = attrs.get('is_virtual', False)
+        modality = attrs.get('modality', Event.Modality.IN_PERSON)
         location = attrs.get('location', '')
-        if not is_virtual and not location:
+        if modality == Event.Modality.IN_PERSON and not location:
             raise serializers.ValidationError({
                 'location': 'Un evento presencial debe tener una ubicación.'
             })
@@ -114,7 +118,8 @@ class EventUpdateSerializer(serializers.ModelSerializer):
         model = Event
         fields = (
             'title', 'description',
-            'is_virtual', 'location', 'location_url',
+            'modality', 'location', 'location_url', 'virtual_access_url',
+            'hero_image_url',
             'start_date', 'end_date', 'max_capacity',
         )
 

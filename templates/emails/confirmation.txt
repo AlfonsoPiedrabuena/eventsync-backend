@@ -14,9 +14,10 @@ DETALLES DEL EVENTO
 -------------------
 Evento  : {{ event.title }}
 Fecha   : {{ event.start_date|date:"l d \d\e F \d\e Y, H:i" }} hrs
-{% if not event.is_virtual and event.location %}Lugar   : {{ event.location }}
-{% elif event.is_virtual %}Modalidad: Virtual
-{% endif %}
+{% if event.location %}Lugar   : {{ event.location }}
+{% endif %}{% if event.modality != 'in_person' %}Modalidad: {% if event.modality == 'hybrid' %}Híbrido{% else %}Virtual{% endif %}
+{% if event.virtual_access_url %}Acceso  : {{ event.virtual_access_url }}
+{% endif %}{% endif %}
 
 {% if not is_waitlisted %}
 TU CÓDIGO DE CHECK-IN
@@ -24,6 +25,9 @@ TU CÓDIGO DE CHECK-IN
 Enlace QR: {{ qr_url }}
 
 Presenta este enlace o el código QR adjunto en la entrada del evento.
+
+¿No podrás asistir? Cancela tu registro aquí para liberar tu lugar:
+{{ cancellation_link }}
 {% endif %}
 
 ---
