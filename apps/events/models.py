@@ -81,6 +81,35 @@ class Event(models.Model):
         db_index=True
     )
 
+    # Visibility
+    class Visibility(models.TextChoices):
+        PUBLIC  = 'public',  'Público'
+        PRIVATE = 'private', 'Privado'
+
+    class AudienceType(models.TextChoices):
+        INTERNAL = 'internal', 'Interno'
+        EXTERNAL = 'external', 'Externo'
+
+    visibility = models.CharField(
+        max_length=10,
+        choices=Visibility.choices,
+        default=Visibility.PUBLIC,
+        db_index=True,
+        help_text="Público: visible para todos. Privado: solo por invitación."
+    )
+    audience_type = models.CharField(
+        max_length=10,
+        choices=AudienceType.choices,
+        null=True,
+        blank=True,
+        help_text="Interno: empleados. Externo: clientes/prospectos."
+    )
+    target_company = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Empresa destinataria del evento privado externo."
+    )
+
     # Ownership
     organizer = models.ForeignKey(
         'authentication.User',

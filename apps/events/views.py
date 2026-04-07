@@ -48,9 +48,12 @@ class EventViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = Event.objects.select_related('organizer').order_by('-created_at')
 
-        # Unauthenticated access: only show published events
+        # Unauthenticated access: only show published public events
         if not user or not user.is_authenticated:
-            qs = qs.filter(status=Event.Status.PUBLISHED)
+            qs = qs.filter(
+                status=Event.Status.PUBLISHED,
+                visibility=Event.Visibility.PUBLIC,
+            )
         elif user.role == 'organizer':
             qs = qs.filter(organizer=user)
 
@@ -186,6 +189,7 @@ class PublicEventBySlugView(APIView):
                     event = Event.objects.filter(
                         id=event_id,
                         status=Event.Status.PUBLISHED,
+                        visibility=Event.Visibility.PUBLIC,
                     ).select_related('organizer').first()
                     if event:
                         return Response(

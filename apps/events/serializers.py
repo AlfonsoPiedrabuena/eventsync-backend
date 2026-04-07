@@ -20,6 +20,7 @@ class EventListSerializer(serializers.ModelSerializer):
         model = Event
         fields = (
             'id', 'title', 'slug', 'status', 'modality', 'is_virtual',
+            'visibility', 'audience_type', 'target_company',
             'location', 'start_date', 'end_date',
             'max_capacity', 'registration_count', 'spots_remaining',
             'is_open_for_registration', 'cover_image_url',
@@ -53,6 +54,7 @@ class EventDetailSerializer(serializers.ModelSerializer):
             'id', 'title', 'slug', 'description', 'status',
             'modality', 'is_virtual', 'location', 'location_url',
             'virtual_access_url', 'hero_image_url',
+            'visibility', 'audience_type', 'target_company',
             'start_date', 'end_date', 'max_capacity',
             'registration_count', 'spots_remaining',
             'is_open_for_registration', 'cover_image_url',
@@ -90,6 +92,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
             'title', 'slug', 'description',
             'modality', 'location', 'location_url', 'virtual_access_url',
             'hero_image_url',
+            'visibility', 'audience_type', 'target_company',
             'start_date', 'end_date', 'max_capacity',
         )
 
@@ -108,6 +111,26 @@ class EventCreateSerializer(serializers.ModelSerializer):
                 'location': 'Un evento presencial debe tener una ubicación.'
             })
 
+        visibility = attrs.get('visibility', Event.Visibility.PUBLIC)
+        audience_type = attrs.get('audience_type')
+        target_company = attrs.get('target_company', '')
+
+        if visibility == Event.Visibility.PRIVATE and not audience_type:
+            raise serializers.ValidationError({
+                'audience_type': 'Un evento privado debe ser interno o externo.'
+            })
+        if visibility == Event.Visibility.PRIVATE and audience_type == Event.AudienceType.EXTERNAL and not target_company:
+            raise serializers.ValidationError({
+                'target_company': 'Un evento privado externo debe indicar la empresa destinataria.'
+            })
+
+        # Limpiar campos que no aplican
+        if visibility == Event.Visibility.PUBLIC:
+            attrs['audience_type'] = None
+            attrs['target_company'] = ''
+        if attrs.get('audience_type') == Event.AudienceType.INTERNAL:
+            attrs['target_company'] = ''
+
         return attrs
 
 
@@ -120,6 +143,7 @@ class EventUpdateSerializer(serializers.ModelSerializer):
             'title', 'description',
             'modality', 'location', 'location_url', 'virtual_access_url',
             'hero_image_url',
+            'visibility', 'audience_type', 'target_company',
             'start_date', 'end_date', 'max_capacity',
         )
 
@@ -131,6 +155,26 @@ class EventUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'end_date': 'La fecha de fin debe ser posterior a la fecha de inicio.'
             })
+
+        visibility = attrs.get('visibility', instance.visibility if instance else Event.Visibility.PUBLIC)
+        audience_type = attrs.get('audience_type', instance.audience_type if instance else None)
+        target_company = attrs.get('target_company', instance.target_company if instance else '')
+
+        if visibility == Event.Visibility.PRIVATE and not audience_type:
+            raise serializers.ValidationError({
+                'audience_type': 'Un evento privado debe ser interno o externo.'
+            })
+        if visibility == Event.Visibility.PRIVATE and audience_type == Event.AudienceType.EXTERNAL and not target_company:
+            raise serializers.ValidationError({
+                'target_company': 'Un evento privado externo debe indicar la empresa destinataria.'
+            })
+
+        if visibility == Event.Visibility.PUBLIC:
+            attrs['audience_type'] = None
+            attrs['target_company'] = ''
+        if attrs.get('audience_type') == Event.AudienceType.INTERNAL:
+            attrs['target_company'] = ''
+
         return attrs
 
 

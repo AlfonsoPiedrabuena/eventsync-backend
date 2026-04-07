@@ -93,6 +93,41 @@ class TestEventCRUD(EventViewSetMixin, TenantTestCase):
         self.assertIn(str(published.id), ids)
         self.assertEqual(len(ids), 1)  # draft not exposed
 
+    def test_list_events_unauthenticated_excludes_private(self):
+        now = timezone.now()
+        # Published public event — should appear
+        Event.objects.create(
+            title='Public Event', slug='public-ev',
+            start_date=now + timedelta(days=10), end_date=now + timedelta(days=10, hours=2),
+            modality='virtual', status=Event.Status.PUBLISHED,
+            visibility=Event.Visibility.PUBLIC,
+        )
+        # Published private event — should NOT appear
+        Event.objects.create(
+            title='Private Event', slug='private-ev',
+            start_date=now + timedelta(days=10), end_date=now + timedelta(days=10, hours=2),
+            modality='virtual', status=Event.Status.PUBLISHED,
+            visibility=Event.Visibility.PRIVATE, audience_type=Event.AudienceType.INTERNAL,
+        )
+        response = TenantClient(self.tenant).get('/api/events/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        titles = [e['title'] for e in response.data['results']]
+        self.assertIn('Public Event', titles)
+        self.assertNotIn('Private Event', titles)
+
+    def test_list_events_authenticated_includes_private(self):
+        now = timezone.now()
+        Event.objects.create(
+            title='Private For Auth', slug='private-auth',
+            start_date=now + timedelta(days=10), end_date=now + timedelta(days=10, hours=2),
+            modality='virtual', status=Event.Status.PUBLISHED,
+            visibility=Event.Visibility.PRIVATE, audience_type=Event.AudienceType.INTERNAL,
+        )
+        response = self.admin_client.get('/api/events/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        titles = [e['title'] for e in response.data['results']]
+        self.assertIn('Private For Auth', titles)
+
     def test_create_event_as_admin(self):
         response = self.admin_client.post('/api/events/', self._event_payload(), format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -246,6 +281,53 @@ class TestCreateEventValidation(EventViewSetMixin, TenantTestCase):
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('location', str(response.data).lower())
+
+    def test_create_private_without_audience_type_fails(self):
+        response = self.admin_client.post('/api/events/', self._event_payload(
+            visibility='private',
+        ), format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('audience_type', response.data)
+
+    def test_create_private_external_without_target_company_fails(self):
+        response = self.admin_client.post('/api/events/', self._event_payload(
+            visibility='private',
+            audience_type='external',
+        ), format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('target_company', response.data)
+
+    def test_create_public_clears_audience_fields(self):
+        response = self.admin_client.post('/api/events/', self._event_payload(
+            visibility='public',
+            audience_type='internal',
+            target_company='ACME',
+        ), format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(response.data['audience_type'])
+        self.assertEqual(response.data['target_company'], '')
+
+    def test_create_private_internal_clears_target_company(self):
+        response = self.admin_client.post('/api/events/', self._event_payload(
+            visibility='private',
+            audience_type='internal',
+            target_company='Should be cleared',
+        ), format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['visibility'], 'private')
+        self.assertEqual(response.data['audience_type'], 'internal')
+        self.assertEqual(response.data['target_company'], '')
+
+    def test_create_private_external_with_company_succeeds(self):
+        response = self.admin_client.post('/api/events/', self._event_payload(
+            visibility='private',
+            audience_type='external',
+            target_company='ACME Corp',
+        ), format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['visibility'], 'private')
+        self.assertEqual(response.data['audience_type'], 'external')
+        self.assertEqual(response.data['target_company'], 'ACME Corp')
 
     def test_end_before_start_fails(self):
         now = timezone.now()

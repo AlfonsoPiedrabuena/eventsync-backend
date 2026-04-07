@@ -7,8 +7,8 @@ from .models import Event
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('title', 'status', 'organizer', 'start_date', 'end_date', 'max_capacity', 'created_at')
-    list_filter = ('status', 'modality', 'start_date')
+    list_display = ('title', 'status', 'visibility', 'audience_type', 'target_company', 'start_date', 'organizer')
+    list_filter = ('status', 'visibility', 'audience_type', 'modality', 'start_date')
     search_fields = ('title', 'slug', 'organizer__email')
     prepopulated_fields = {'slug': ('title',)}
     readonly_fields = ('id', 'created_at', 'updated_at', 'published_at')
@@ -24,6 +24,10 @@ class EventAdmin(admin.ModelAdmin):
         }),
         ('Capacidad y Estado', {
             'fields': ('max_capacity', 'status', 'organizer')
+        }),
+        ('Visibilidad y Audiencia', {
+            'fields': ('visibility', 'audience_type', 'target_company'),
+            'description': 'Define quién puede ver y acceder a este evento.'
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at', 'published_at'),
