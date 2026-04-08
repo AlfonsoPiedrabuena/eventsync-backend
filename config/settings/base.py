@@ -75,7 +75,6 @@ TENANT_APPS = (
     'apps.checkin',
     'apps.communications',
     'apps.analytics',
-    'apps.integrations',
     'apps.billing',
     'apps.registration_forms',
 )

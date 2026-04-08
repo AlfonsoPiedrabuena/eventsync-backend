@@ -13,7 +13,7 @@ Este archivo proporciona guías técnicas para Claude Code al trabajar en el bac
 - **Framework**: Django 5.0+ (Python 3.11+)
 - **API**: Django REST Framework (DRF)
 - **Multi-tenancy**: django-tenants (PostgreSQL schema-based isolation)
-- **Autenticación**: djangorestframework-simplejwt + OAuth2 (django-oauth-toolkit para HubSpot)
+- **Autenticación**: djangorestframework-simplejwt
 - **Task Queue**: Celery + Redis (emails, sincronizaciones CRM)
 - **Email**: django-anymail (Resend activo; soporte multi-provider: SendGrid, SES)
 - **Base de Datos**: PostgreSQL 15+
@@ -47,7 +47,6 @@ eventsync-backend/          # Raíz del repo (antes: backend/ en el monorepo)
 │   ├── checkin/           # Check-in por QR: token, manual, stats
 │   ├── communications/    # Emails y notificaciones: EmailLog, tasks Celery
 │   ├── analytics/         # Dashboard stats: KPIs, timeline
-│   ├── integrations/      # CRM integrations: HubSpot (E7, E8) — stub
 │   └── billing/           # Billing y planes (E9) — stub
 ├── shared/                 # Código compartido cross-app
 │   ├── authentication.py  # TenantAwareJWTAuthentication
@@ -160,7 +159,7 @@ def send_confirmation_email(registration_id): ...
 @shared_task
 def send_scheduled_reminder(event_id, reminder_type): ...
 @shared_task
-def sync_attendee_to_hubspot(registration_id): ...
+def sync_to_crm(registration_id): ...
 ```
 
 **Celery Beat** para tareas programadas (recordatorios ±30 min, `finalize_past_events` diaria 1am).
@@ -194,13 +193,6 @@ if db_conn.schema_name == 'public':
                 db_conn.set_schema(schema_name)  # permanente para este request
                 break
 ```
-
-### Integración con HubSpot (OAuth 2.0) — E7/E8
-
-1. Tenant Admin inicia conexión → Redirect a HubSpot authorize URL
-2. Callback a `/api/integrations/hubspot/callback/`
-3. Backend intercambia code por access + refresh token (encriptados en DB)
-4. `HubSpotService.create_or_update_contact()` sincroniza asistentes → contactos
 
 ---
 
@@ -341,8 +333,6 @@ def create_event(tenant, user, event_data):
 ### 📋 Próximos Sprints
 
 - **FEAT-03**: IA para descripción de evento (Claude API)
-- **E7 (Sprint 13-15)**: Integración HubSpot — OAuth 2.0, sync asistentes → contactos, timeline
-- **E8 (Sprint 16-18)**: Plugin HubSpot Marketplace
 - **E9 (Sprint 19-20)**: Admin Multi-tenant, billing (Stripe)
 
 ---
@@ -516,11 +506,6 @@ AWS_SECRET_ACCESS_KEY=
 AWS_STORAGE_BUCKET_NAME=eventsync-media
 AWS_S3_REGION_NAME=us-east-1
 
-# HubSpot OAuth (E7)
-HUBSPOT_CLIENT_ID=
-HUBSPOT_CLIENT_SECRET=
-HUBSPOT_REDIRECT_URI=https://api.eventsync.app/api/integrations/hubspot/callback/
-
 # Sentry
 SENTRY_DSN=
 ```
@@ -599,7 +584,7 @@ psql eventsync -c "\dt"                  # Ver tablas del schema actual
 - **SQL Injection**: Siempre usar ORM, nunca raw SQL sin parametrizar
 - **Tenant Isolation**: NUNCA queries sin filtro de tenant — django-tenants lo maneja automáticamente via schema
 - **Secrets**: Usar variables de entorno, NUNCA commitear `.env`
-- **OAuth tokens**: Encriptar antes de guardar en DB (HubSpot)
+
 - **JWT**: Blacklist activado para invalidar tokens al logout
 
 ## Performance

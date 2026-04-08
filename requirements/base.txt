@@ -22,9 +22,6 @@ redis==5.0.3
 # Email
 django-anymail[resend]==10.3
 
-# OAuth
-django-oauth-toolkit==2.3.0
-
 # Image Processing
 Pillow==10.2.0
 
