@@ -55,6 +55,9 @@ def create_registration(event: Event, validated_data: dict) -> Registration:
             "Ya existe un registro activo con este email para este evento."
         )
 
+    # Validate dynamic form fields
+    _validate_form_responses(event, validated_data.get('form_responses', {}))
+
     # Determine status based on capacity
     reg_status = Registration.Status.CONFIRMED
     if event.max_capacity is not None and event.spots_remaining == 0:
@@ -128,3 +131,30 @@ def _promote_from_waitlist(event: Event):
     if next_in_line:
         next_in_line.status = Registration.Status.CONFIRMED
         next_in_line.save(update_fields=['status', 'updated_at'])
+
+
+def _validate_form_responses(event: Event, form_responses: dict):
+    """
+    Validate that all required dynamic form fields have been answered.
+
+    Args:
+        event: The Event instance whose form fields are checked
+        form_responses: Dict of {field_key: value} from the registration request
+
+    Raises:
+        ValidationError: If any required field is missing
+    """
+    from apps.registration_forms.models import RegistrationFormField
+
+    required_fields = RegistrationFormField.objects.filter(
+        event=event,
+        is_required=True,
+        is_enabled=True,
+    )
+    errors = {}
+    for field in required_fields:
+        val = form_responses.get(field.field_key)
+        if val is None or (val == '' and val != 0):
+            errors[field.field_key] = f'El campo "{field.label}" es obligatorio.'
+    if errors:
+        raise ValidationError(errors)

@@ -41,6 +41,11 @@ class Registration(models.Model):
     phone = models.CharField(max_length=30, blank=True)
     company = models.CharField(max_length=200, blank=True)
     position = models.CharField(max_length=200, blank=True)
+    form_responses = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Respuestas a campos dinámicos. {field_key: valor}",
+    )
 
     # Status
     status = models.CharField(

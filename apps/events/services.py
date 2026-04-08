@@ -62,6 +62,7 @@ def create_event(user, validated_data: dict) -> Event:
         slug=slug,
         **validated_data
     )
+    _create_default_form_fields(event)
     return event
 
 
@@ -146,6 +147,46 @@ def transition_event_status(event: Event, user, new_status: str) -> Event:
             pass  # Task queue unavailable — transition still succeeds.
 
     return event
+
+
+def _create_default_form_fields(event: Event):
+    """
+    Create the default form fields for a newly created event.
+
+    These mirror the base Registration fields (company, position, phone) so
+    organizers see them as configurable entries in the form builder.
+    """
+    from apps.registration_forms.models import RegistrationFormField
+
+    defaults = [
+        {
+            'label': 'Empresa',
+            'field_key': 'company',
+            'field_type': RegistrationFormField.FieldType.TEXT,
+            'order': 1,
+            'is_required': False,
+            'placeholder': 'Ej: Acme Corp',
+        },
+        {
+            'label': 'Cargo',
+            'field_key': 'position',
+            'field_type': RegistrationFormField.FieldType.TEXT,
+            'order': 2,
+            'is_required': False,
+            'placeholder': 'Ej: Gerente de Marketing',
+        },
+        {
+            'label': 'Teléfono',
+            'field_key': 'phone',
+            'field_type': RegistrationFormField.FieldType.PHONE,
+            'order': 3,
+            'is_required': False,
+            'placeholder': '+52 55 1234 5678',
+        },
+    ]
+    RegistrationFormField.objects.bulk_create([
+        RegistrationFormField(event=event, **d) for d in defaults
+    ])
 
 
 def _validate_ready_to_publish(event: Event):

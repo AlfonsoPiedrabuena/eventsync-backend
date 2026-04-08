@@ -41,11 +41,13 @@ class RegistrationListSerializer(serializers.ModelSerializer):
 class RegistrationCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new registration."""
 
+    form_responses = serializers.JSONField(required=False, default=dict)
+
     class Meta:
         model = Registration
         fields = (
             'first_name', 'last_name', 'email',
-            'phone', 'company', 'position',
+            'phone', 'company', 'position', 'form_responses',
         )
 
     def validate_email(self, value):

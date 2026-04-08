@@ -77,6 +77,7 @@ TENANT_APPS = (
     'apps.analytics',
     'apps.integrations',
     'apps.billing',
+    'apps.registration_forms',
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
