@@ -1,1 +1,38 @@
--r requirements/production.txt
+# Core Django
+Django==5.0.3
+python-decouple==3.8
+
+# Django REST Framework
+djangorestframework==3.15.1
+djangorestframework-simplejwt==5.3.1
+
+# Multi-tenancy
+django-tenants==3.6.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# CORS
+django-cors-headers==4.3.1
+
+# Task Queue
+celery==5.3.6
+redis==5.0.3
+
+# Email
+django-anymail[resend]==10.3
+
+# Image Processing
+Pillow==10.2.0
+
+# QR Code generation
+qrcode[pil]==7.4.2
+
+# Utils
+python-slugify==8.0.4
+
+# Production server
+gunicorn==21.2.0
+
+# Monitoring
+sentry-sdk==1.43.0
