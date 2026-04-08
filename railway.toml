@@ -1,2 +1,2 @@
 [deploy]
-preDeployCommand = "python manage.py migrate_schemas --shared && python manage.py migrate_schemas"
+preDeployCommand = "python manage.py migrate_schemas --shared && python manage.py migrate_schemas && python manage.py create_public_tenant --domain api.eventsync.cloud"
