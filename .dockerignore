@@ -1,0 +1,16 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+htmlcov/
+.coverage
+.pytest_cache/
+media/
+.env
+.env.*
+!.env.example
+*.md
+docs/
+requerimientos/
