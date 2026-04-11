@@ -6,7 +6,10 @@ from .base import *
 DEBUG = False
 
 # Security
-SECURE_SSL_REDIRECT = True
+# Railway termina SSL en el proxy — el contenedor recibe HTTP internamente.
+# SECURE_SSL_REDIRECT=True causa loop de 301. Ver CLAUDE.md.
+SECURE_SSL_REDIRECT = False
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
