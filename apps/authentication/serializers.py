@@ -96,6 +96,12 @@ class TenantRegistrationSerializer(serializers.Serializer):
                 schema_name=schema_name
             )
 
+            # migrate_schemas (called inside Tenant.save()) may leave the connection
+            # in the tenant schema after attempting an internal commit that is blocked
+            # by this outer atomic() block. Explicitly restore public schema so
+            # subsequent ORM operations target the correct table.
+            connection.set_schema('public')
+
             # Create primary domain (for development)
             # In production, this should be a subdomain or custom domain
             domain_name = f"{schema_name}.localhost"
@@ -115,14 +121,20 @@ class TenantRegistrationSerializer(serializers.Serializer):
                 tenant=tenant,
             )
 
-            # Generate email verification token
+            # Generate email verification token.
+            # Use update_fields to guarantee only this column is written, and to
+            # surface a RowNotFound error instead of silently updating 0 rows if
+            # the schema is still wrong.
             user.email_verification_token = uuid.uuid4().hex
-            user.save()
+            user.save(update_fields=['email_verification_token'])
 
         # Enqueue AFTER transaction commits — if called inside atomic(), the worker
         # may execute before the data is visible to other DB connections.
-        from apps.communications.tasks import send_verification_email_task
-        send_verification_email_task.delay(user.id, 'public')
+        try:
+            from apps.communications.services import send_verification_email
+            send_verification_email(user)
+        except Exception:
+            pass  # Email failure must not block registration
 
         return {
             'user': user,
@@ -210,3 +222,31 @@ class InvitationAcceptSerializer(serializers.Serializer):
             raise serializers.ValidationError({'password': list(e.messages)})
 
         return attrs
+
+
+class TeamMemberSerializer(serializers.ModelSerializer):
+    """Read serializer for listing team members."""
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+    date_joined = serializers.DateTimeField(format='%Y-%m-%d', read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'email', 'first_name', 'last_name', 'full_name',
+            'role', 'is_active', 'date_joined',
+        )
+        read_only_fields = ('id', 'email', 'full_name', 'date_joined')
+
+
+class TeamMemberUpdateSerializer(serializers.ModelSerializer):
+    """Write serializer — only role and is_active can be updated."""
+
+    class Meta:
+        model = User
+        fields = ('role', 'is_active')
+
+    def validate_role(self, value):
+        allowed = ('tenant_admin', 'organizer', 'checkin_staff')
+        if value not in allowed:
+            raise serializers.ValidationError('Rol no permitido.')
+        return value

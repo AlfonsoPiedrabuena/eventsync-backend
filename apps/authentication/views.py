@@ -1,7 +1,7 @@
 """
 Views for Authentication app.
 """
-from rest_framework import status, generics, permissions
+from rest_framework import status, generics, permissions, viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -11,6 +11,7 @@ from datetime import timedelta
 import uuid
 
 from .models import User, Invitation
+from .permissions import IsTenantAdmin
 from .serializers import (
     UserSerializer,
     TenantRegistrationSerializer,
@@ -19,6 +20,8 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     InvitationSerializer,
     InvitationAcceptSerializer,
+    TeamMemberSerializer,
+    TeamMemberUpdateSerializer,
 )
 
 
@@ -335,3 +338,43 @@ class CurrentUserView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class TeamViewSet(
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+):
+    """
+    GET    /api/auth/team/        — lista miembros del tenant (todos los autenticados)
+    PATCH  /api/auth/team/{id}/   — cambia rol o estado (solo tenant_admin)
+    DELETE /api/auth/team/{id}/   — desactiva acceso is_active=False (solo tenant_admin)
+    """
+    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
+
+    def get_permissions(self):
+        if self.action in ('partial_update', 'update', 'destroy'):
+            return [IsTenantAdmin()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        return User.objects.filter(
+            tenant=self.request.user.tenant,
+        ).exclude(
+            role='super_admin',
+        ).exclude(
+            id=self.request.user.id,
+        ).order_by('first_name', 'last_name')
+
+    def get_serializer_class(self):
+        if self.action in ('partial_update', 'update'):
+            return TeamMemberUpdateSerializer
+        return TeamMemberSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        """Desactivar en lugar de borrar."""
+        member = self.get_object()
+        member.is_active = False
+        member.save(update_fields=['is_active'])
+        return Response(status=status.HTTP_204_NO_CONTENT)

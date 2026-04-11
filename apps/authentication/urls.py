@@ -1,7 +1,8 @@
 """
 URL configuration for Authentication app.
 """
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     TenantRegistrationView,
@@ -13,9 +14,13 @@ from .views import (
     InvitationListCreateView,
     InvitationAcceptView,
     CurrentUserView,
+    TeamViewSet,
 )
 
 app_name = 'authentication'
+
+router = DefaultRouter()
+router.register(r'team', TeamViewSet, basename='team')
 
 urlpatterns = [
     # Registration and login (E1)
@@ -39,4 +44,7 @@ urlpatterns = [
 
     # Current user
     path('me/', CurrentUserView.as_view(), name='current-user'),
+
+    # Team management (FEAT-07)
+    path('', include(router.urls)),
 ]
