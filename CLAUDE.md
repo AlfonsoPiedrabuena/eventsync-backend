@@ -3,7 +3,7 @@
 Este archivo proporciona guías técnicas para Claude Code al trabajar en el backend de EventSync, una plataforma SaaS multi-tenant de gestión integral de eventos.
 
 **Repo**: `eventsync-backend` (extraído del monorepo `eventsync/` en FEAT-04)
-**API base URL (producción)**: `https://api.eventsync.app`
+**API base URL (producción)**: `https://api.eventsync.cloud`
 **Frontend companion repo**: `eventsync-frontend` → `https://app.eventsync.app`
 
 ---
@@ -251,13 +251,13 @@ def create_event(tenant, user, event_data):
 - Framework: `pytest` + `pytest-django`
 - Fixtures: `factory_boy` (Factory pattern)
 - Cobertura mínima: 80%
-- **180 tests pasando** (models + services + views para E1-E6, FEAT-01, FEAT-02)
+- **195 tests pasando** (models + services + views para E1-E6, FEAT-01, FEAT-02, FEAT-05, FEAT-07)
 
 ---
 
 ## Roadmap y Estado del Proyecto
 
-**Última actualización**: 2026-04-07
+**Última actualización**: 2026-04-11
 
 ### ✅ Completado
 
@@ -330,8 +330,32 @@ def create_event(tenant, user, event_data):
 - `create_registration()` valida campos requeridos → 400 con `field_key` infractor
 - 26 nuevos tests (180 total)
 
+**FEAT-05 — QR CID Inline en Correos de Confirmación** (2026-04-10)
+- Problema: QR embebido como `data:image/png;base64,...` bloqueado por Gmail y Outlook (CSP)
+- Fix: CID inline attachment (`multipart/related`) — funciona en Gmail, Outlook y Apple Mail
+- `_generate_qr_base64()` renombrado a `_generate_qr_png()` — retorna `bytes` crudos
+- `_send_email()` acepta `inline_image: bytes | None` y `inline_image_cid: str` opcionales
+- Template `confirmation.html`: `src="cid:qr_image"` (antes `data:base64,...`)
+- 2 tests nuevos: CID attachment en confirmado, ausencia de attachment en lista de espera (182 total)
+
+**FEAT-07 — Gestión de Equipo por Organización** (2026-04-11)
+- `IsTenantAdmin` permission en `apps/authentication/permissions.py`
+- `TeamMemberSerializer` (lectura) + `TeamMemberUpdateSerializer` (escritura: solo `role` e `is_active`)
+- `TeamViewSet`: `GET /api/auth/team/` (IsAuthenticated) · `PATCH/DELETE /api/auth/team/{id}/` (IsTenantAdmin)
+- `DELETE` desactiva (`is_active=False`) — nunca borra el registro
+- `send_invitation_email()` en `apps/communications/services.py` — email al invitado con link `accept_url`; `try/except` en `perform_create` para que un fallo de email no bloquee la respuesta 201
+- Templates: `templates/emails/invitation.html` + `invitation.txt`
+- 13 tests en `apps/authentication/tests/test_views.py` (195 total)
+
+### ✅ Deploy a producción (2026-04-11)
+- Backend desplegado en Railway: `https://api.eventsync.cloud`
+- Frontend desplegado en Vercel: `https://eventsync.cloud`
+- Emails transaccionales funcionando vía Resend (`notifications.eventsync.cloud`)
+- Dominio verificado en Railway y Vercel
+
 ### 📋 Próximos Sprints
 
+- **Celery worker**: Agregar segundo servicio en Railway para recordatorios programados
 - **FEAT-03**: IA para descripción de evento (Claude API)
 - **E9 (Sprint 19-20)**: Admin Multi-tenant, billing (Stripe)
 
