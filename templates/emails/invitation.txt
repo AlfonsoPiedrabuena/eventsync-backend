@@ -1,0 +1,14 @@
+Hola {{ first_name }},
+
+{{ invited_by_name }} te ha invitado a unirte a {{ organization_name }} en EventSync con el rol de {{ role_label }}.
+
+Para aceptar la invitación y crear tu cuenta, visita el siguiente enlace:
+
+{{ accept_url }}
+
+Esta invitación expira en 48 horas.
+
+Si no esperabas este correo, puedes ignorarlo.
+
+---
+EventSync — Plataforma de gestión de eventos

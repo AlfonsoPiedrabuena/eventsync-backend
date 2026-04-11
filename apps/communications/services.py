@@ -3,10 +3,12 @@ Communication services for EventSync.
 
 Core email-sending logic. All functions are idempotent: they check EmailLog
 before sending to avoid duplicate emails on task retries. QR codes are
-embedded as base64 PNG so emails work without S3.
+embedded as CID inline attachments (multipart/related) so they render in
+Gmail, Outlook, and Apple Mail — unlike data:base64 URIs which are blocked
+by CSP in most email clients.
 """
 import io
-import base64
+from email.mime.image import MIMEImage
 
 import qrcode
 from qrcode.image.pil import PilImage
@@ -30,12 +32,13 @@ _CHECKIN_BASE_URL = getattr(settings, 'CHECKIN_BASE_URL', 'https://eventsync.app
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _generate_qr_base64(qr_token: str) -> str:
+def _generate_qr_png(qr_token: str) -> bytes:
     """
-    Generate a QR code PNG and return it as a base64 string.
+    Generate a QR code PNG and return the raw bytes.
 
-    The QR encodes the full check-in URL so scanning it from any QR reader
-    opens the check-in flow directly, not just a raw token.
+    Returns bytes instead of base64 — the caller attaches it as a CID inline
+    image. The QR encodes the full check-in URL so scanning it from any QR
+    reader opens the check-in flow directly, not just a raw token.
     """
     qr_url = f"{_CHECKIN_BASE_URL}/{qr_token}"
 
@@ -46,16 +49,29 @@ def _generate_qr_base64(qr_token: str) -> str:
     img = qr.make_image(image_factory=PilImage, fill_color="black", back_color="white")
     buffer = io.BytesIO()
     img.save(buffer, format='PNG')
-    buffer.seek(0)
-    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+    return buffer.getvalue()
 
 
-def _send_email(to_email: str, subject: str, template_base: str, context: dict) -> None:
+def _send_email(
+    to_email: str,
+    subject: str,
+    template_base: str,
+    context: dict,
+    inline_image: bytes | None = None,
+    inline_image_cid: str = 'qr_image',
+) -> None:
     """
     Render HTML + plain text templates and send via the configured backend.
 
     In development, EMAIL_BACKEND=console prints to stdout.
-    In production, anymail routes to SendGrid.
+    In production, anymail routes to Resend.
+
+    Args:
+        inline_image: Optional PNG bytes to embed as a CID inline attachment.
+            Referenced in the HTML template as <img src="cid:{inline_image_cid}">.
+            Works in Gmail, Outlook, and Apple Mail — unlike data:base64 URIs
+            which are blocked by CSP in most email clients.
+        inline_image_cid: Content-ID for referencing the image in the template.
     """
     html_content = render_to_string(f"{template_base}.html", context)
     text_content = render_to_string(f"{template_base}.txt", context)
@@ -67,6 +83,14 @@ def _send_email(to_email: str, subject: str, template_base: str, context: dict) 
         to=[to_email],
     )
     msg.attach_alternative(html_content, "text/html")
+
+    if inline_image is not None:
+        mime_img = MIMEImage(inline_image, _subtype='png')
+        mime_img.add_header('Content-ID', f'<{inline_image_cid}>')
+        mime_img.add_header('Content-Disposition', 'inline', filename=f'{inline_image_cid}.png')
+        msg.mixed_subtype = 'related'
+        msg.attach(mime_img)
+
     msg.send()
 
 
@@ -122,7 +146,7 @@ def send_confirmation_email(registration: Registration) -> None:
 
     event = registration.event
     is_waitlisted = registration.status == Registration.Status.WAITLISTED
-    qr_base64 = None if is_waitlisted else _generate_qr_base64(registration.qr_token)
+    qr_png_bytes = None if is_waitlisted else _generate_qr_png(registration.qr_token)
     qr_url = f"{_CHECKIN_BASE_URL}/{registration.qr_token}"
     subject = f"Registro {'en lista de espera' if is_waitlisted else 'confirmado'}: {event.title}"
 
@@ -135,7 +159,6 @@ def send_confirmation_email(registration: Registration) -> None:
         'registration': registration,
         'event': event,
         'is_waitlisted': is_waitlisted,
-        'qr_base64': qr_base64,
         'qr_url': qr_url,
         'cancellation_link': cancellation_link,
     }
@@ -146,6 +169,7 @@ def send_confirmation_email(registration: Registration) -> None:
             subject=subject,
             template_base='emails/confirmation',
             context=context,
+            inline_image=qr_png_bytes,
         )
         _log_email(
             event=event,
@@ -412,6 +436,46 @@ def send_verification_email(user) -> None:
             'first_name': user.first_name,
             'organization_name': getattr(user.tenant, 'name', 'tu organización'),
             'verification_url': verification_url,
+        },
+    )
+
+
+ROLE_LABELS = {
+    'tenant_admin': 'Administrador',
+    'organizer': 'Organizador de Eventos',
+    'checkin_staff': 'Staff de Check-in',
+}
+
+
+def send_invitation_email(invitation) -> None:
+    """
+    Send an invitation email to a new team member.
+
+    The link points to the Next.js frontend invite/accept page, which
+    calls the backend API to complete the registration.
+    """
+    from django.conf import settings as django_settings
+
+    accept_url = (
+        f"{django_settings.FRONTEND_URL}/invite/accept"
+        f"?token={invitation.token}"
+    )
+
+    first_name = invitation.first_name or invitation.email.split('@')[0]
+    invited_by_name = invitation.invited_by.get_full_name() or invitation.invited_by.email
+    organization_name = getattr(invitation.tenant, 'name', 'tu organización')
+    role_label = ROLE_LABELS.get(invitation.role, invitation.role)
+
+    _send_email(
+        to_email=invitation.email,
+        subject=f'Te han invitado a unirte a {organization_name} en EventSync',
+        template_base='emails/invitation',
+        context={
+            'first_name': first_name,
+            'invited_by_name': invited_by_name,
+            'organization_name': organization_name,
+            'role_label': role_label,
+            'accept_url': accept_url,
         },
     )
 

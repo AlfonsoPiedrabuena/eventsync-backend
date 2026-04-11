@@ -270,7 +270,11 @@ class InvitationListCreateView(generics.ListCreateAPIView):
             expires_at=expires_at
         )
 
-        # TODO: Send invitation email (E5)
+        try:
+            from apps.communications.services import send_invitation_email
+            send_invitation_email(invitation)
+        except Exception:
+            pass  # Email failure must not block the invitation response
 
         return Response({
             'message': 'Invitación enviada exitosamente.',
