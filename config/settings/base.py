@@ -55,6 +55,7 @@ SHARED_APPS = (
     'rest_framework_simplejwt',
     'corsheaders',
     'anymail',
+    'drf_spectacular',
 )
 
 # Apps specific to each tenant (tenant schema)
@@ -166,6 +167,14 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'EventSync API',
+    'DESCRIPTION': 'Multi-tenant event management platform API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 # JWT Settings

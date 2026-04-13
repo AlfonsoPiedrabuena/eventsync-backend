@@ -28,5 +28,8 @@ Pillow==10.2.0
 # QR Code generation
 qrcode[pil]==7.4.2
 
+# API Documentation
+drf-spectacular==0.29.0
+
 # Utils
 python-slugify==8.0.4
